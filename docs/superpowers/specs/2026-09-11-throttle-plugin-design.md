@@ -39,6 +39,8 @@ throttle/
       log.js                   # append-only JSONL logger
   commands/
     throttle-setup.md          # slash command: prints manual settings.json edit
+    throttle-off.md             # slash command: disable throttling
+    throttle-on.md               # slash command: re-enable throttling
   test/
     calc.test.js               # node:test unit tests
   README.md
@@ -70,7 +72,9 @@ Registered for `PreToolUse`, `PostToolUse`, and `UserPromptSubmit` via
 `hooks/hooks.json`, invoked as
 `node ${CLAUDE_PLUGIN_ROOT}/hooks/throttle-hook.js <EventName>`.
 
-1. If `THROTTLE_DISABLE=1` is set, exit 0 immediately, no output.
+1. If `THROTTLE_DISABLE=1` is set, or `${CLAUDE_PLUGIN_DATA}/disabled`
+   exists (the on/off toggle, see Enable/Disable below), exit 0
+   immediately, no output.
 2. Read the cache file via `lib/cache.js`. If missing, unreadable, or
    `captured_at` is more than 15 minutes old, treat as "no data" —
    exit 0, no delay, one log line noting why.
@@ -129,6 +133,9 @@ mechanism exists for arbitrary config):
 - `THROTTLE_MAX_DELAY_S` (default 30)
 - `THROTTLE_DISABLE` (set to `1` to fully disable)
 
+Plus the `${CLAUDE_PLUGIN_DATA}/disabled` toggle file (see Enable /
+disable below), checked ahead of any of the above.
+
 ## Setup (manual statusLine step)
 
 Plugin installation via the standard plugin mechanism auto-registers
@@ -146,6 +153,24 @@ command:
 
 The plugin never edits `~/.claude/settings.json` itself — it is a
 shared, user-owned config file; the edit is the user's to make.
+
+## Enable / disable
+
+For short jobs where pacing is unwanted, plain on/off toggle via a
+state file (not an env var — env vars set by a slash command's output
+don't propagate to the separate hook processes Claude Code spawns
+later; a file does):
+
+- `/throttle-off` — creates `${CLAUDE_PLUGIN_DATA}/disabled` (empty
+  file). `throttle-hook.js` checks for it first, before touching the
+  cache, and short-circuits to delay=0, no output, if present.
+- `/throttle-on` — removes that file.
+- Both commands print current state after acting, so there's no
+  ambiguity about whether throttling is on.
+- Stays off until `/throttle-on` is run — indefinite, no auto-resume,
+  per your choice of plain on/off over a timed pause.
+- `THROTTLE_DISABLE=1` remains as a separate, env-based override
+  (useful for scripting/CI) — either mechanism disables.
 
 ## Error handling
 
