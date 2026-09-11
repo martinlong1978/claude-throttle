@@ -1,0 +1,51 @@
+const fs = require('fs');
+const path = require('path');
+
+function readOriginalStatusLine(settingsPath) {
+  let raw;
+  try {
+    raw = fs.readFileSync(settingsPath, 'utf8');
+  } catch (_) {
+    return null;
+  }
+  let settings;
+  try {
+    settings = JSON.parse(raw);
+  } catch (_) {
+    return null;
+  }
+  return (settings.statusLine && settings.statusLine.command) || null;
+}
+
+function writeConfig(dataDir, { originalStatusLineCommand }) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.writeFileSync(path.join(dataDir, 'config.json'), JSON.stringify({ originalStatusLineCommand }));
+}
+
+function buildInstructions({ pluginRoot, originalCommand }) {
+  const before = JSON.stringify(
+    { statusLine: { type: 'command', command: originalCommand || '<none set>' } },
+    null,
+    2
+  );
+  const after = JSON.stringify(
+    { statusLine: { type: 'command', command: `node ${pluginRoot}/hooks/statusline-wrapper.js` } },
+    null,
+    2
+  );
+  return ['Current statusLine in ~/.claude/settings.json:', before, '', 'Replace it with:', after].join('\n');
+}
+
+function main() {
+  const dataDir = process.env.CLAUDE_PLUGIN_DATA;
+  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+  const home = process.env.HOME || process.env.USERPROFILE;
+  const settingsPath = path.join(home, '.claude', 'settings.json');
+  const originalCommand = readOriginalStatusLine(settingsPath);
+  writeConfig(dataDir, { originalStatusLineCommand: originalCommand });
+  console.log(buildInstructions({ pluginRoot, originalCommand }));
+}
+
+if (require.main === module) main();
+
+module.exports = { readOriginalStatusLine, writeConfig, buildInstructions };
