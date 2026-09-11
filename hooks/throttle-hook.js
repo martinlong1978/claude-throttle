@@ -2,6 +2,7 @@ const { computeDelay } = require('./lib/calc');
 const { readCache } = require('./lib/cache');
 const { appendLog } = require('./lib/log');
 const { isDisabled } = require('./lib/toggle');
+const { resolveDataDir } = require('./lib/paths');
 
 function run(eventName, { dataDir, env = process.env, now = Date.now() / 1000 } = {}) {
   try {
@@ -62,7 +63,7 @@ function sleepSync(ms) {
 
 function main() {
   const eventName = process.argv[2];
-  const dataDir = process.env.CLAUDE_PLUGIN_DATA;
+  const dataDir = resolveDataDir();
   const now = Date.now() / 1000;
   const result = run(eventName, { dataDir, now });
 

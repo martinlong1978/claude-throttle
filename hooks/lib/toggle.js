@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { resolveDataDir } = require('./paths');
 
 function togglePath(dataDir) {
   return path.join(dataDir, 'disabled');
@@ -20,7 +21,12 @@ function setEnabled(dataDir) {
 }
 
 function main() {
-  const dataDir = process.env.CLAUDE_PLUGIN_DATA;
+  const dataDir = resolveDataDir();
+  if (!dataDir) {
+    console.error('throttle: could not determine the plugin data directory (CLAUDE_PLUGIN_DATA/CLAUDE_PLUGIN_ROOT unavailable)');
+    process.exitCode = 1;
+    return;
+  }
   const arg = process.argv[2];
   if (arg === 'off') {
     setDisabled(dataDir);

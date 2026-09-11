@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { readOriginalStatusLine, writeConfig, buildInstructions } = require('../hooks/lib/setup');
 
 function tmpDir() {
@@ -41,4 +42,19 @@ test('buildInstructions includes the wrapper path and the original command', () 
   const text = buildInstructions({ pluginRoot: '/plugins/throttle', originalCommand: 'bash foo.sh' });
   assert.match(text, /bash foo\.sh/);
   assert.match(text, /\/plugins\/throttle\/hooks\/statusline-wrapper\.js/);
+});
+
+test('CLI works with only CLAUDE_PLUGIN_ROOT set, as when a command runs it without the hook runner', () => {
+  const home = tmpDir();
+  const pluginRoot = path.join(home, '.claude', 'plugins', 'cache', 'throttle-marketplace', 'throttle', '1.0.0');
+
+  const output = execFileSync('node', [path.join(__dirname, '..', 'hooks', 'lib', 'setup.js')], {
+    env: { ...process.env, CLAUDE_PLUGIN_DATA: '', CLAUDE_PLUGIN_ROOT: pluginRoot, HOME: home, USERPROFILE: home },
+    encoding: 'utf8',
+  });
+
+  assert.match(output, /Replace it with/);
+  const dataDir = path.join(home, '.claude', 'plugins', 'data', 'throttle-throttle-marketplace');
+  const config = JSON.parse(fs.readFileSync(path.join(dataDir, 'config.json'), 'utf8'));
+  assert.equal(config.originalStatusLineCommand, null);
 });

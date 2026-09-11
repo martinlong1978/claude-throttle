@@ -2,6 +2,7 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { writeCache } = require('./lib/cache');
+const { resolveDataDir } = require('./lib/paths');
 
 function extractRateLimit(payload) {
   const fh = payload && payload.rate_limits && payload.rate_limits.five_hour;
@@ -19,7 +20,7 @@ function loadOriginalCommand(dataDir) {
 }
 
 function main() {
-  const dataDir = process.env.CLAUDE_PLUGIN_DATA;
+  const dataDir = resolveDataDir();
   let raw = '';
   try {
     raw = fs.readFileSync(0, 'utf8');
