@@ -1,0 +1,26 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "throttle-marketplace",
+  "description": "Marketplace for the throttle plugin",
+  "version": "1.0.0",
+  "owner": {
+    "name": "Martin Long",
+    "url": "https://github.com/martinlong1978"
+  },
+  "plugins": [
+    {
+      "name": "throttle",
+      "source": "./",
+      "displayName": "Throttle",
+      "description": "Paces Claude Code token usage against the 5-hour rate-limit window.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Martin Long"
+      },
+      "homepage": "https://github.com/martinlong1978/claude-throttle",
+      "repository": "https://github.com/martinlong1978/claude-throttle",
+      "license": "MIT",
+      "category": "productivity"
+    }
+  ]
+}
