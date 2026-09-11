@@ -5,7 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/throttle-hook.js PreToolUse"
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/throttle-hook.js PreToolUse",
+            "timeout": 60
           }
         ]
       }
@@ -15,7 +16,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/throttle-hook.js PostToolUse"
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/throttle-hook.js PostToolUse",
+            "timeout": 60
           }
         ]
       }
@@ -25,7 +27,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/throttle-hook.js UserPromptSubmit"
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/throttle-hook.js UserPromptSubmit",
+            "timeout": 60
           }
         ]
       }

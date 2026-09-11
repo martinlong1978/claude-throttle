@@ -1,9 +1,13 @@
 const path = require('path');
 
-function resolveDataDir(env = process.env) {
+function resolvePluginRoot(env = process.env, fallbackRoot = null) {
+  return env.CLAUDE_PLUGIN_ROOT || fallbackRoot;
+}
+
+function resolveDataDir(env = process.env, fallbackRoot = null) {
   if (env.CLAUDE_PLUGIN_DATA) return env.CLAUDE_PLUGIN_DATA;
 
-  const root = env.CLAUDE_PLUGIN_ROOT;
+  const root = resolvePluginRoot(env, fallbackRoot);
   const home = env.HOME || env.USERPROFILE;
   if (!root || !home) return null;
 
@@ -11,7 +15,8 @@ function resolveDataDir(env = process.env) {
   // .../plugins/cache/<marketplace>/<plugin>/<version>, with per-plugin
   // data at .../plugins/data/<plugin>-<marketplace>. Fall back to
   // deriving that path when CLAUDE_PLUGIN_DATA hasn't been set for us
-  // (e.g. a command's script run outside the hook runner).
+  // (e.g. a command's script run outside the hook runner, or the
+  // statusLine command, which never receives either env var).
   const parts = root.split(/[\\/]/).filter(Boolean);
   const idx = parts.lastIndexOf('cache');
   if (idx === -1 || parts.length < idx + 3) return null;
@@ -21,4 +26,4 @@ function resolveDataDir(env = process.env) {
   return path.join(home, '.claude', 'plugins', 'data', `${plugin}-${marketplace}`);
 }
 
-module.exports = { resolveDataDir };
+module.exports = { resolveDataDir, resolvePluginRoot };

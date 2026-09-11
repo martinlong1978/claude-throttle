@@ -20,7 +20,12 @@ function loadOriginalCommand(dataDir) {
 }
 
 function main() {
-  const dataDir = resolveDataDir();
+  // The statusLine command configured in settings.json is a bare
+  // top-level setting, not a plugin-scoped hook invocation, so Claude
+  // Code never sets CLAUDE_PLUGIN_ROOT/CLAUDE_PLUGIN_DATA for it. Fall
+  // back to this file's own location, which is always correct.
+  const fallbackRoot = path.join(__dirname, '..');
+  const dataDir = resolveDataDir(process.env, fallbackRoot);
   let raw = '';
   try {
     raw = fs.readFileSync(0, 'utf8');

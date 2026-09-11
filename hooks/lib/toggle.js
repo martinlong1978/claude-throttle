@@ -21,7 +21,12 @@ function setEnabled(dataDir) {
 }
 
 function main() {
-  const dataDir = resolveDataDir();
+  // toggle.js lives at hooks/lib/toggle.js, two levels below the plugin
+  // root. Commands run this via the model's own shell, which never has
+  // CLAUDE_PLUGIN_ROOT/CLAUDE_PLUGIN_DATA set, so fall back to this
+  // file's own location.
+  const fallbackRoot = path.join(__dirname, '..', '..');
+  const dataDir = resolveDataDir(process.env, fallbackRoot);
   if (!dataDir) {
     console.error('throttle: could not determine the plugin data directory (CLAUDE_PLUGIN_DATA/CLAUDE_PLUGIN_ROOT unavailable)');
     process.exitCode = 1;

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { resolveDataDir } = require('./paths');
+const { resolveDataDir, resolvePluginRoot } = require('./paths');
 
 function readOriginalStatusLine(settingsPath) {
   let raw;
@@ -38,13 +38,18 @@ function buildInstructions({ pluginRoot, originalCommand }) {
 }
 
 function main() {
-  const dataDir = resolveDataDir();
+  // setup.js lives at hooks/lib/setup.js, two levels below the plugin
+  // root. When a command runs this via the model's own shell (rather
+  // than the hook runner), CLAUDE_PLUGIN_ROOT/CLAUDE_PLUGIN_DATA are
+  // never set, so fall back to this file's own location.
+  const fallbackRoot = path.join(__dirname, '..', '..');
+  const dataDir = resolveDataDir(process.env, fallbackRoot);
   if (!dataDir) {
     console.error('throttle: could not determine the plugin data directory (CLAUDE_PLUGIN_DATA/CLAUDE_PLUGIN_ROOT unavailable)');
     process.exitCode = 1;
     return;
   }
-  const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+  const pluginRoot = resolvePluginRoot(process.env, fallbackRoot);
   const home = process.env.HOME || process.env.USERPROFILE;
   const settingsPath = path.join(home, '.claude', 'settings.json');
   const originalCommand = readOriginalStatusLine(settingsPath);

@@ -1,3 +1,4 @@
+const path = require('path');
 const { computeDelay } = require('./lib/calc');
 const { readCache } = require('./lib/cache');
 const { appendLog } = require('./lib/log');
@@ -63,7 +64,8 @@ function sleepSync(ms) {
 
 function main() {
   const eventName = process.argv[2];
-  const dataDir = resolveDataDir();
+  const fallbackRoot = path.join(__dirname, '..');
+  const dataDir = resolveDataDir(process.env, fallbackRoot);
   const now = Date.now() / 1000;
   const result = run(eventName, { dataDir, now });
 
