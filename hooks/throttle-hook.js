@@ -19,7 +19,7 @@ function run(eventName, { dataDir, env = process.env, now = Date.now() / 1000 } 
     }
 
     const targetPct = Number(env.THROTTLE_TARGET_PCT) || 95;
-    const maxDelayS = Number(env.THROTTLE_MAX_DELAY_S) || 90;
+    const maxDelayS = Number(env.THROTTLE_MAX_DELAY_S) || 240;
     const delay = computeDelay({
       usedPercentage: cache.usedPercentage,
       resetsAt: cache.resetsAt,

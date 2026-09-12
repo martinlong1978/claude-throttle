@@ -1,5 +1,5 @@
 {
   "name": "throttle",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "Paces token usage against the Claude Code 5-hour rate-limit window."
 }
