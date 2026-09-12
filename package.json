@@ -1,7 +1,7 @@
 {
   "name": "throttle-plugin",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Paces Claude Code token usage against the 5-hour rate-limit window.",
   "scripts": {
     "test": "node --test"
