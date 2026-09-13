@@ -44,6 +44,29 @@ test('buildInstructions includes the wrapper path and the original command', () 
   assert.match(text, /\/plugins\/throttle\/hooks\/statusline-wrapper\.js/);
 });
 
+test('buildInstructions suggests a default refreshInterval when none exists', () => {
+  const text = buildInstructions({ pluginRoot: '/plugins/throttle', originalCommand: 'bash foo.sh' });
+  assert.match(text, /"refreshInterval": 10/);
+});
+
+test('buildInstructions preserves an existing refreshInterval instead of overriding it', () => {
+  const text = buildInstructions({
+    pluginRoot: '/plugins/throttle',
+    originalCommand: 'bash foo.sh',
+    existingStatusLine: { type: 'command', command: 'bash foo.sh', refreshInterval: 5 },
+  });
+  assert.match(text, /"refreshInterval": 5/);
+});
+
+test('buildInstructions preserves other existing statusLine fields', () => {
+  const text = buildInstructions({
+    pluginRoot: '/plugins/throttle',
+    originalCommand: 'bash foo.sh',
+    existingStatusLine: { type: 'command', command: 'bash foo.sh', padding: 0 },
+  });
+  assert.match(text, /"padding": 0/);
+});
+
 test('CLI works with only CLAUDE_PLUGIN_ROOT set, as when a command runs it without the hook runner', () => {
   const home = tmpDir();
   const pluginRoot = path.join(home, '.claude', 'plugins', 'cache', 'throttle-marketplace', 'throttle', '1.0.0');
