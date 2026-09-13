@@ -18,10 +18,18 @@ the full design.
 ## Setup
 
 1. Enable the plugin.
-2. Run `/throttle-setup`. It prints your current `statusLine` command
-   and the replacement to use.
-3. Paste the replacement into `~/.claude/settings.json` yourself and
-   restart Claude Code. (The plugin never edits this file for you.)
+2. Run `/throttle-setup`. It computes the `statusLine` replacement,
+   shows you the before/after, and then edits `~/.claude/settings.json`
+   itself to apply it — this will prompt for permission (editing a file
+   outside the project), which is expected.
+3. Restart Claude Code for the change to take effect.
+
+Re-running `/throttle-setup` later (e.g. after upgrading the plugin) is
+safe — it detects that `statusLine` already points at throttle's own
+wrapper and reuses your real original command instead of overwriting
+it with the wrapper path. If it can't find a stored original at all
+(e.g. `config.json` was deleted), it warns instead of guessing and
+leaves settings.json untouched.
 
 Hooks register automatically once the plugin is enabled — no manual
 step needed for those.
