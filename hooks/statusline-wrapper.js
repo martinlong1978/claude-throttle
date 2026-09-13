@@ -3,11 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const { writeCache } = require('./lib/cache');
 const { resolveDataDir } = require('./lib/paths');
+const { computePaceDiff } = require('./lib/calc');
+const { formatSignedDuration } = require('./lib/format');
 
 function extractRateLimit(payload) {
   const fh = payload && payload.rate_limits && payload.rate_limits.five_hour;
   if (!fh || typeof fh.used_percentage !== 'number' || typeof fh.resets_at !== 'number') return null;
   return { usedPercentage: fh.used_percentage, resetsAt: fh.resets_at };
+}
+
+function buildPaceSuffix({ usedPercentage, resetsAt, now, targetPct }) {
+  const diff = computePaceDiff({ usedPercentage, resetsAt, now, targetPct });
+  return ` · pace ${formatSignedDuration(diff)}`;
 }
 
 function loadOriginalCommand(dataDir) {
@@ -55,9 +62,22 @@ function main() {
   }
 
   const result = spawnSync(originalCommand, { shell: true, input: raw, encoding: 'utf8' });
-  process.stdout.write(result.stdout || '');
+  let output = result.stdout || '';
+
+  if (rl) {
+    const targetPct = Number(process.env.THROTTLE_TARGET_PCT) || 95;
+    const suffix = buildPaceSuffix({
+      usedPercentage: rl.usedPercentage,
+      resetsAt: rl.resetsAt,
+      now: Date.now() / 1000,
+      targetPct,
+    });
+    output = output.replace(/\n$/, '') + suffix + '\n';
+  }
+
+  process.stdout.write(output);
 }
 
 if (require.main === module) main();
 
-module.exports = { extractRateLimit, loadOriginalCommand };
+module.exports = { extractRateLimit, loadOriginalCommand, buildPaceSuffix };

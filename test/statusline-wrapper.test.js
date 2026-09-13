@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { extractRateLimit, loadOriginalCommand } = require('../hooks/statusline-wrapper');
+const { extractRateLimit, loadOriginalCommand, buildPaceSuffix } = require('../hooks/statusline-wrapper');
 const { readCache } = require('../hooks/lib/cache');
 
 function tmpDir() {
@@ -31,12 +31,13 @@ test('loadOriginalCommand returns null when config.json is missing', () => {
   assert.equal(loadOriginalCommand(tmpDir()), null);
 });
 
-test('CLI caches usage and chains to the original command, passing stdin through', () => {
+test('CLI caches usage, chains to the original command, and appends the pace suffix', () => {
   const dir = tmpDir();
   const echoScript = path.join(dir, 'echo-status.js');
   fs.writeFileSync(echoScript, "process.stdout.write('MY STATUS LINE\\n');");
   fs.writeFileSync(path.join(dir, 'config.json'), JSON.stringify({ originalStatusLineCommand: `node ${echoScript}` }));
-  const stdin = JSON.stringify({ rate_limits: { five_hour: { used_percentage: 33, resets_at: 9999999999 } } });
+  const resetsAt = Math.floor(Date.now() / 1000) + 3600; // 1h from real now, keeps the pace diff small
+  const stdin = JSON.stringify({ rate_limits: { five_hour: { used_percentage: 33, resets_at: resetsAt } } });
 
   const output = execFileSync('node', [path.join(__dirname, '..', 'hooks', 'statusline-wrapper.js')], {
     env: { ...process.env, CLAUDE_PLUGIN_DATA: dir },
@@ -44,9 +45,24 @@ test('CLI caches usage and chains to the original command, passing stdin through
     encoding: 'utf8',
   });
 
-  assert.equal(output.trim(), 'MY STATUS LINE');
+  assert.match(output, /^MY STATUS LINE · pace [+-]\d{2}:\d{2}:\d{2}\n?$/);
   const cache = readCache(dir, { now: Date.now() / 1000 });
   assert.equal(cache.usedPercentage, 33);
+});
+
+test('CLI does not append a pace suffix when rate_limits data is absent', () => {
+  const dir = tmpDir();
+  const echoScript = path.join(dir, 'echo-status.js');
+  fs.writeFileSync(echoScript, "process.stdout.write('MY STATUS LINE\\n');");
+  fs.writeFileSync(path.join(dir, 'config.json'), JSON.stringify({ originalStatusLineCommand: `node ${echoScript}` }));
+
+  const output = execFileSync('node', [path.join(__dirname, '..', 'hooks', 'statusline-wrapper.js')], {
+    env: { ...process.env, CLAUDE_PLUGIN_DATA: dir },
+    input: '{}',
+    encoding: 'utf8',
+  });
+
+  assert.equal(output.trim(), 'MY STATUS LINE');
 });
 
 test('CLI prints a setup hint when no original command is configured yet', () => {
@@ -57,4 +73,9 @@ test('CLI prints a setup hint when no original command is configured yet', () =>
     encoding: 'utf8',
   });
   assert.match(output, /\/throttle-setup/);
+});
+
+test('buildPaceSuffix formats the pace diff with a leading separator', () => {
+  const suffix = buildPaceSuffix({ usedPercentage: 50, resetsAt: 1000 + 14400, now: 1000, targetPct: 95 });
+  assert.match(suffix, /^ · pace \+\d{2}:\d{2}:\d{2}$/);
 });

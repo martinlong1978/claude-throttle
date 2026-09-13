@@ -38,6 +38,21 @@ test('run computes a positive delay when usage is ahead of pace', () => {
   assert.ok(result.delay > 0);
 });
 
+test('run returns and logs paceDiffSeconds/paceDiff alongside the delay', () => {
+  const dir = tmpDir();
+  const now = 1000;
+  writeCache(dir, { usedPercentage: 50, resetsAt: now + 14400, now });
+  const result = run('PreToolUse', { dataDir: dir, env: {}, now: now + 5 });
+  assert.equal(typeof result.paceDiffSeconds, 'number');
+  assert.ok(result.paceDiffSeconds > 0);
+  assert.match(result.paceDiff, /^\+\d{2}:\d{2}:\d{2}$/);
+
+  const logLines = fs.readFileSync(path.join(dir, 'throttle.log'), 'utf8').trim().split('\n');
+  const lastEntry = JSON.parse(logLines[logLines.length - 1]);
+  assert.equal(lastEntry.paceDiffSeconds, result.paceDiffSeconds);
+  assert.equal(lastEntry.paceDiff, result.paceDiff);
+});
+
 test('run fails open on a corrupt cache file', () => {
   const dir = tmpDir();
   fs.writeFileSync(path.join(dir, 'rate-limit-cache.json'), '{ not valid json');
@@ -45,10 +60,15 @@ test('run fails open on a corrupt cache file', () => {
   assert.equal(result.delay, 0);
 });
 
-test('formatMessage mentions the delay and usage percentage', () => {
-  const msg = formatMessage('PreToolUse', { delay: 12, usedPercentage: 61, resetsAt: 1000 + 2580, targetPct: 95 }, 1000);
+test('formatMessage mentions the delay, usage percentage, and pace diff', () => {
+  const msg = formatMessage(
+    'PreToolUse',
+    { delay: 12, usedPercentage: 61, resetsAt: 1000 + 2580, targetPct: 95, paceDiff: '+00:00:12' },
+    1000
+  );
   assert.match(msg, /12s/);
   assert.match(msg, /61%/);
+  assert.match(msg, /\+00:00:12/);
 });
 
 test('CLI sleeps for the computed delay and prints a systemMessage', () => {

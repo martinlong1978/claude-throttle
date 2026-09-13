@@ -1,9 +1,10 @@
 const path = require('path');
-const { computeDelay } = require('./lib/calc');
+const { computeDelay, computePaceDiff } = require('./lib/calc');
 const { readCache } = require('./lib/cache');
 const { appendLog } = require('./lib/log');
 const { isDisabled } = require('./lib/toggle');
 const { resolveDataDir } = require('./lib/paths');
+const { formatSignedDuration } = require('./lib/format');
 
 function run(eventName, { dataDir, env = process.env, now = Date.now() / 1000 } = {}) {
   try {
@@ -27,6 +28,15 @@ function run(eventName, { dataDir, env = process.env, now = Date.now() / 1000 } 
       targetPct,
       maxDelayS,
     });
+    const paceDiffSeconds = Math.round(
+      computePaceDiff({
+        usedPercentage: cache.usedPercentage,
+        resetsAt: cache.resetsAt,
+        now,
+        targetPct,
+      })
+    );
+    const paceDiff = formatSignedDuration(paceDiffSeconds);
 
     appendLog(dataDir, {
       ts: now,
@@ -34,9 +44,11 @@ function run(eventName, { dataDir, env = process.env, now = Date.now() / 1000 } 
       delay,
       usedPercentage: cache.usedPercentage,
       resetsAt: cache.resetsAt,
+      paceDiffSeconds,
+      paceDiff,
     });
 
-    return { delay, usedPercentage: cache.usedPercentage, resetsAt: cache.resetsAt, targetPct };
+    return { delay, usedPercentage: cache.usedPercentage, resetsAt: cache.resetsAt, targetPct, paceDiffSeconds, paceDiff };
   } catch (err) {
     try {
       appendLog(dataDir, {
@@ -55,7 +67,7 @@ function run(eventName, { dataDir, env = process.env, now = Date.now() / 1000 } 
 
 function formatMessage(eventName, result, now) {
   const minsLeft = Math.round((result.resetsAt - now) / 60);
-  return `Throttle: delayed ${Math.round(result.delay)}s (used ${result.usedPercentage}% of 5h window, ${minsLeft}min actual time left, target ${result.targetPct}%) — pacing to stay under budget by reset.`;
+  return `Throttle: delayed ${Math.round(result.delay)}s (used ${result.usedPercentage}% of 5h window, ${minsLeft}min actual time left, target ${result.targetPct}%, pace ${result.paceDiff}) — pacing to stay under budget by reset.`;
 }
 
 function sleepSync(ms) {

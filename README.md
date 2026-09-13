@@ -33,8 +33,17 @@ step needed for those.
   now. Stays off until you run `/throttle-on`.
 - `/throttle-on` — re-enable pacing.
 - Env overrides: `THROTTLE_TARGET_PCT` (default 95), `THROTTLE_MAX_DELAY_S`
-  (default 30), `THROTTLE_DISABLE=1` (same effect as `/throttle-off`).
-- Decisions are logged as JSONL to `${CLAUDE_PLUGIN_DATA}/throttle.log`.
+  (default 240), `THROTTLE_DISABLE=1` (same effect as `/throttle-off`).
+  Each hook's timeout in `hooks/hooks.json` (default 300s) must stay
+  comfortably above `THROTTLE_MAX_DELAY_S`, or Claude Code can kill the
+  hook mid-sleep before it reports back.
+- Decisions are logged as JSONL to `${CLAUDE_PLUGIN_DATA}/throttle.log`,
+  including `paceDiffSeconds` and `paceDiff` (signed `HH:MM:SS`) —
+  positive means ahead of pace (burning budget faster than time
+  elapsed), negative means behind pace (safe margin).
+- The status line itself also shows the pace diff, appended to your
+  original status line's output as `· pace +00:05:30` (or `-…` when
+  behind pace), whenever usage data is available.
 
 ## Manual end-to-end verification
 
