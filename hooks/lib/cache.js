@@ -5,7 +5,15 @@ function cachePath(dataDir) {
   return path.join(dataDir, 'rate-limit-cache.json');
 }
 
+// Concurrent statusline-wrapper.js invocations (event-driven trigger and
+// refreshInterval timer can overlap) race to write this file. Completion
+// order isn't the same as start order — a later-started invocation (with
+// fresher data) can finish writing before an earlier-started one that's
+// still waiting on the wrapped original statusLine command. Guard against
+// that by refusing to overwrite a newer "now" with an older one.
 function writeCache(dataDir, { usedPercentage, resetsAt, now }) {
+  const existing = readCache(dataDir, { maxAgeS: Infinity, now });
+  if (existing && existing.capturedAt > now) return;
   fs.mkdirSync(dataDir, { recursive: true });
   const data = { used_percentage: usedPercentage, resets_at: resetsAt, captured_at: now };
   fs.writeFileSync(cachePath(dataDir), JSON.stringify(data));

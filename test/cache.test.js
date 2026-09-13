@@ -35,3 +35,22 @@ test('readCache returns null on corrupt JSON', () => {
   fs.writeFileSync(path.join(dir, 'rate-limit-cache.json'), 'not json');
   assert.equal(readCache(dir, { now: 1000 }), null);
 });
+
+test('writeCache ignores a write whose "now" is older than the already-stored captured_at (out-of-order concurrent invocation)', () => {
+  const dir = tmpDir();
+  // Newer invocation (started later) finishes writing first.
+  writeCache(dir, { usedPercentage: 43, resetsAt: 5000, now: 2000 });
+  // Older invocation (started earlier, e.g. a slower refreshInterval-triggered
+  // process) finishes writing second and must not clobber the newer value.
+  writeCache(dir, { usedPercentage: 35, resetsAt: 5000, now: 1000 });
+  const result = readCache(dir, { now: 2000 });
+  assert.equal(result.usedPercentage, 43);
+});
+
+test('writeCache still accepts a write whose "now" is newer than the stored captured_at', () => {
+  const dir = tmpDir();
+  writeCache(dir, { usedPercentage: 35, resetsAt: 5000, now: 1000 });
+  writeCache(dir, { usedPercentage: 43, resetsAt: 5000, now: 2000 });
+  const result = readCache(dir, { now: 2000 });
+  assert.equal(result.usedPercentage, 43);
+});

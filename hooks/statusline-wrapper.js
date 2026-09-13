@@ -27,6 +27,11 @@ function loadOriginalCommand(dataDir) {
 }
 
 function main() {
+  // Captured before the (potentially slow) spawnSync below, so that
+  // concurrent invocations of this script can be ordered by when they
+  // started rather than when they happened to finish writing. See the
+  // comment on writeCache in hooks/lib/cache.js.
+  const invokedAt = Date.now() / 1000;
   // The statusLine command configured in settings.json is a bare
   // top-level setting, not a plugin-scoped hook invocation, so Claude
   // Code never sets CLAUDE_PLUGIN_ROOT/CLAUDE_PLUGIN_DATA for it. Fall
@@ -49,7 +54,7 @@ function main() {
   const rl = extractRateLimit(payload);
   if (rl) {
     try {
-      writeCache(dataDir, { usedPercentage: rl.usedPercentage, resetsAt: rl.resetsAt, now: Date.now() / 1000 });
+      writeCache(dataDir, { usedPercentage: rl.usedPercentage, resetsAt: rl.resetsAt, now: invokedAt });
     } catch (_) {
       // caching must never block the status line from rendering
     }
