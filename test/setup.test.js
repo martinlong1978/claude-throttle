@@ -51,6 +51,15 @@ test('buildInstructions includes the wrapper path and the original command', () 
   assert.match(text, /\/plugins\/throttle\/hooks\/statusline-wrapper\.js/);
 });
 
+test('buildInstructions normalizes a backslash-separated pluginRoot (Windows __dirname fallback) to forward slashes', () => {
+  const text = buildInstructions({
+    pluginRoot: 'C:\\Users\\marti\\.claude\\plugins\\cache\\throttle-marketplace\\throttle\\1.0.9',
+    originalCommand: 'bash foo.sh',
+  });
+  assert.match(text, /"command": "node C:\/Users\/marti\/\.claude\/plugins\/cache\/throttle-marketplace\/throttle\/1\.0\.9\/hooks\/statusline-wrapper\.js"/);
+  assert.doesNotMatch(text.split('Replace it with:')[1], /\\\\/);
+});
+
 test('buildInstructions suggests a default refreshInterval when none exists', () => {
   const text = buildInstructions({ pluginRoot: '/plugins/throttle', originalCommand: 'bash foo.sh' });
   assert.match(text, /"refreshInterval": 10/);
@@ -132,7 +141,7 @@ test('CLI writes a machine-readable plan file alongside the human-readable instr
 
   const dataDir = path.join(home, '.claude', 'plugins', 'data', 'throttle-throttle-marketplace');
   const plan = readPlan(dataDir);
-  assert.equal(plan.statusLine.command, `node ${pluginRoot}/hooks/statusline-wrapper.js`);
+  assert.equal(plan.statusLine.command, `node ${pluginRoot.replace(/\\/g, '/')}/hooks/statusline-wrapper.js`);
   assert.equal(plan.statusLine.refreshInterval, 10);
 });
 
@@ -168,7 +177,7 @@ test('CLI reuses the stored original on a second run after the settings.json now
   const config = JSON.parse(fs.readFileSync(path.join(dataDir, 'config.json'), 'utf8'));
   assert.equal(config.originalStatusLineCommand, 'bash ~/.claude/statusline-command.sh');
   const plan = readPlan(dataDir);
-  assert.equal(plan.statusLine.command, `node ${pluginRootV2}/hooks/statusline-wrapper.js`);
+  assert.equal(plan.statusLine.command, `node ${pluginRootV2.replace(/\\/g, '/')}/hooks/statusline-wrapper.js`);
 });
 
 test('CLI works with only CLAUDE_PLUGIN_ROOT set, as when a command runs it without the hook runner', () => {

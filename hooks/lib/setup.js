@@ -68,10 +68,16 @@ function readPlan(dataDir) {
 }
 
 function buildProposedStatusLine({ pluginRoot, existingStatusLine, refreshIntervalS = DEFAULT_REFRESH_INTERVAL_S }) {
+  // pluginRoot may come from process.env.CLAUDE_PLUGIN_ROOT (native
+  // Windows backslashes) or from path.join() in the __dirname fallback
+  // (also backslashes on Windows). Whatever shell Claude Code uses to
+  // run the statusLine command doesn't handle backslash path separators
+  // reliably, so always normalize to forward slashes here.
+  const normalizedRoot = pluginRoot.replace(/\\/g, '/');
   return {
     ...(existingStatusLine || {}),
     type: 'command',
-    command: `node ${pluginRoot}/hooks/statusline-wrapper.js`,
+    command: `node ${normalizedRoot}/hooks/statusline-wrapper.js`,
     refreshInterval: (existingStatusLine && existingStatusLine.refreshInterval) || refreshIntervalS,
   };
 }
